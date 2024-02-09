@@ -6,10 +6,11 @@
     "declarationMap": true,
     "module": "es2020",
     "moduleResolution": "node",
-    "outDir": "dist/",
+    "outDir": "dist/lib",
+    "rootDir": "src/",
     "target": "es6",
     "typeRoots": ["node_modules/@types"]
   },
   "include": ["src/"],
-  "exclude": ["dist/", "nodes_modules/"]
+  "exclude": ["dist/", "nodes_modules/", "jest.config.ts", "rollup.config.ts"]
 }
