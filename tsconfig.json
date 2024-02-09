@@ -2,14 +2,17 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "declaration": true,
-    "declarationDir": "dist/types",
+    "declarationDir": "dist/@types",
     "declarationMap": true,
     "module": "es2020",
     "moduleResolution": "node",
     "outDir": "dist/lib",
     "rootDir": "src/",
     "target": "es6",
-    "typeRoots": ["node_modules/@types"]
+    "typeRoots": [
+      "dist/@types",
+      "node_modules/@types"
+    ]
   },
   "include": ["src/"],
   "exclude": ["dist/", "nodes_modules/", "jest.config.ts", "rollup.config.ts"]
