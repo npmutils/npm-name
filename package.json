@@ -1,7 +1,7 @@
 {
   "name": "@npmutils/npm-name",
   "type": "module",
-  "version": "7.1.2",
+  "version": "7.1.1",
   "description": "Checks whether a package or organization name is available on npm",
   "engines": {
     "node": ">=18"
@@ -49,6 +49,7 @@
     "@rollup/plugin-node-resolve": "^13.0.0",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^8.2.1",
+    "@types/rc": "^1.2.4",
     "@types/validate-npm-package-name": "^4.0.2",
     "clean-publish": "^4.2.0",
     "rimraf": "^3.0.2",
@@ -56,11 +57,9 @@
     "vitest": "^1.2.2"
   },
   "dependencies": {
-    "is-scoped": "^3.0.0",
     "is-url-superb": "^6.1.0",
-    "org-regex": "^1.0.0",
+    "rc": "^1.2.8",
     "registry-auth-token": "^5.0.2",
-    "registry-url": "^6.0.1",
     "validate-npm-package-name": "^5.0.0"
   }
 }

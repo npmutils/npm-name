@@ -1,91 +1,127 @@
-import { OutgoingHttpHeaders } from 'node:http';
-
-import isScoped from 'is-scoped';
-import orgRegex from 'org-regex';
-import registryUrl from 'registry-url';
+import rc from 'rc';
 import registryAuthToken from 'registry-auth-token';
 import validate from 'validate-npm-package-name';
 
-const configuredRegistryUrl = registryUrl();
-const organizationRegex = orgRegex({ exact: true });
+namespace npmUtils {
 
-// Ensure the URL always ends in a `/`
-function normalizeUrl(url: string): string {
-	return url.replace(/\/$/, '') + '/';
-}
-
-const npmOrganizationUrl = 'https://www.npmjs.com/org/';
-
-export async function request(name: string, options?: NpmNameOptions): Promise<boolean> {
-	options = options || {};
-
-	const registryUrl = normalizeUrl(options.registryUrl || configuredRegistryUrl);
-
-	const isOrganization = organizationRegex.test(name);
-	if (isOrganization) {
-		name = name.replace(/[@/]/g, '');
+	export class NpmInfo {
+		// absolute url to the registry
+		registryUrl: string;
+		// relative url to the package or organization
+		relativeUrl: string;
+		// npm organization, if any
+		organization?: string;
+		// package name, if any
+		packageName?: string;
+		isOrganization: boolean;
 	}
 
-	const isValid = validate(name);
+	const npmjsUrl = 'https://registry.npmjs.org/';
+	const npmjsOrgUrl = 'https://www.npmjs.com/org/';
+	const npmjsRegexPattern = '(@(?<org>[a-z\\d][\\w-.]+))?/?(?<pkg>[a-z\\d][\\w-.]*)?';
+
+	export function getRegistryUrl(scope?: string): string {
+
+		const result = rc('npm', { registry: npmjsUrl });
+		const url = result[`${scope}:registry`] || result.config_registry || result.registry;
+		return url.slice(-1) === '/' ? url : `${url}/`;
+	}
+
+	export function getPackageInfo(name: string, registryUrl?: string): NpmInfo {
+
+		const scopedRegex = getPackageRegex({ exact: true });
+		const matched = name.match(scopedRegex);
+
+		let organization: string | undefined = undefined;
+		let packageName: string | undefined = name;
+
+		if (matched !== null && matched.groups !== null) {
+			organization = matched.groups['org'];
+			packageName = matched.groups['pkg'];
+		}
+
+		const isOrganization = organization !== undefined && packageName === undefined;
+
+		registryUrl = normalizeUrl(registryUrl || getRegistryUrl());
+
+		let relativeUrl = packageName;
+		if (organization !== undefined)
+			relativeUrl = `@${organization}%2f${packageName}`;
+		relativeUrl = relativeUrl.toLowerCase();
+
+		if (isOrganization) {
+			registryUrl = normalizeUrl(npmjsOrgUrl);
+			relativeUrl = organization.toLowerCase();
+		}
+
+		return {
+			registryUrl: registryUrl,
+			relativeUrl: relativeUrl,
+			organization: organization,
+			packageName: packageName,
+			isOrganization: isOrganization,
+		};
+	}
+
+	function getPackageRegex(options: { exact: boolean }): RegExp {
+		return options && options.exact ?
+			new RegExp(`^${npmjsRegexPattern}$`, 'i') :
+			new RegExp(npmjsRegexPattern, 'gi');
+	}
+
+	// Ensure the URL always ends in a `/`
+	function normalizeUrl(url: string): string {
+		return url.replace(/\/$/, '') + '/';
+	}
+}
+
+export async function request(name: string, options: NpmNameOptions = {}): Promise<boolean> {
+
+	const { registryUrl, relativeUrl, organization, packageName, isOrganization } = npmUtils.getPackageInfo(name, options.registryUrl);
+
+	const requestedName = isOrganization ? organization : name;
+
+	// check name is valid
+
+	const isValid = validate(requestedName);
 	if (!isValid.validForNewPackages) {
-		const notices = [...isValid.warnings || [], ...isValid.errors || []].map(v => `- ${v}`);
+		const notices = [
+			...(isValid.warnings || []),
+			...(isValid.errors || []),
+		].map((v) => `- ${v}`);
 		notices.unshift(`Invalid package name: ${name}`);
-		const error = new InvalidNameError(notices.join('\n'));
+		const error = new InvalidNameError(notices.join("\n"));
 		error.warnings = isValid.warnings;
 		error.errors = isValid.errors;
 		throw error;
 	}
 
-	let urlName = name;
-	const isScopedPackage = isScoped(name);
-	if (isScopedPackage) {
-		urlName = name.replace(/\//g, '%2f');
+	// check name is available
+
+	let headers: HeadersInit = {};
+	if (isOrganization) {
+		const credentials = registryAuthToken(registryUrl, { recursive: true });
+		if (credentials)
+			headers['Authorization'] = `${credentials.type} ${credentials.token}`;
 	}
-	urlName = urlName.toLowerCase();
 
-	try {
-		let headers: OutgoingHttpHeaders = {}
-		let requestUri: string = '';
+	const response = await fetch(registryUrl + relativeUrl, {
+		method: 'HEAD',
+		headers: headers,
+	});
 
-		if (isOrganization) {
-			const authInfo = registryAuthToken(registryUrl, { recursive: true });
-			if (authInfo) {
-				headers.authorization = `${authInfo.type} ${authInfo.token}`;
-			}
-			requestUri = npmOrganizationUrl + urlName;
-		} else {
-			requestUri = registryUrl + urlName;
-		}
-
-		const response = await fetch(requestUri);
-		if (response.status === 404) {
-			// Disabled as it's often way too slow
-			// see https://github.com/sindresorhus/npm-name-cli/issues/30
-			return true;
-		}
-		if (isScopedPackage && response.status === 401) {
-			return true;
-		}
-		return false;
+	if (response.status === 404) {
+		// Disabled as it's often way too slow
+		// see https://github.com/sindresorhus/npm-name-cli/issues/30
+		return true;
 	}
-	catch (error: unknown) {
-		//if (error instanceof HTTPError) {
-		//	const { status } = error.response || {};
 
-		//	if (status === 404) {
-		//		// Disabled as it's often way too slow
-		//		// see https://github.com/sindresorhus/npm-name-cli/issues/30
-		//		return true;
-		//	}
-
-		//	if (isScopedPackage && status === 401) {
-		//		return true;
-		//	}
-		//}
-
-		throw error;
+	if (isOrganization && response.status === 401) {
+		return true;
 	}
-};
+
+	return false;
+}
 
 export class InvalidNameError extends Error {
 	warnings?: string[];

@@ -25,13 +25,14 @@ test('returns false when package name is taken', async () => {
 
 	expect(await npmName('chalk')).toBeFalsy();
 	expect(await npmName('recursive-readdir')).toBeFalsy();
+	expect(await npmName('recursive-readdir')).toBeFalsy();
 	expect(await npmName('np', options)).toBeFalsy();
 });
 
-// test.failing('returns false when package name is taken, regardless of punctuation', async t => {
-// 	t.false(await npmName('ch-alk'));
-// 	t.false(await npmName('recursivereaddir'));
-// });
+test.fails('returns false when package name is taken, regardless of punctuation', async () => {
+	expect(await npmName('ch-alk')).toBeFalsy();
+	expect(await npmName('recursivereaddir')).toBeFalsy();
+});
 
 test('returns false when organization name is taken', async () => {
 
