@@ -16,6 +16,7 @@ namespace npmUtils {
 		isOrganization: boolean;
 	}
 
+	const npmjsUrl = 'https://npmjs.com/org/';
 	const npmjsRegexPattern = '(@(?<org>[a-z\\d][\\w-.]+))?/?(?<pkg>[a-z\\d][\\w-.]*)?';
 
 	export function getPackageInfo(name: string, registryUrl?: string): NpmInfo {
@@ -33,7 +34,7 @@ namespace npmUtils {
 
 		const isOrganization = organization !== undefined && packageName === undefined;
 
-		registryUrl = normalizeUrl(registryUrl || getRegistryUrl(undefined));
+		registryUrl = normalizeUrl(registryUrl || getRegistryUrl(`@${organization}`));
 
 		let relativeUrl = packageName;
 		if (organization !== undefined)
@@ -41,9 +42,10 @@ namespace npmUtils {
 		relativeUrl = relativeUrl.toLowerCase();
 
 		if (isOrganization) {
-			registryUrl = getRegistryUrl(`@${organization}`);
+			registryUrl = npmjsUrl;
 			relativeUrl = organization.toLowerCase();
 		}
+
 
 		return {
 			registryUrl: registryUrl,
