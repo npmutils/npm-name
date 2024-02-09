@@ -1,4 +1,3 @@
-import isUrl from 'is-url-superb';
 import { request, NpmNameOptions } from "./request.js";
 
 export async function npmName(name: string, options: NpmNameOptions = {}): Promise<boolean> {
@@ -11,4 +10,12 @@ export async function npmName(name: string, options: NpmNameOptions = {}): Promi
 	}
 
 	return request(name, options);
+}
+
+function isUrl(address: string) {
+	try {
+		new URL(address || '');
+		return true;
+	}
+	catch { return false; }
 }

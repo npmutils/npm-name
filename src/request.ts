@@ -1,5 +1,5 @@
 import getAuthToken from 'registry-auth-token';
-import getRegistryUrl from 'registry-auth-token/registry-url';
+import getRegistryUrl from 'registry-auth-token/registry-url.js';
 import validate from 'validate-npm-package-name';
 
 namespace npmUtils {
@@ -68,7 +68,7 @@ namespace npmUtils {
 
 export async function request(name: string, options: NpmNameOptions = {}): Promise<boolean> {
 
-	const { registryUrl, relativeUrl, organization, packageName, isOrganization } = npmUtils.getPackageInfo(name, options.registryUrl);
+	const { registryUrl, relativeUrl, organization, isOrganization } = npmUtils.getPackageInfo(name, options.registryUrl);
 
 	const requestedName = isOrganization ? organization : name;
 
