@@ -29,7 +29,7 @@ test('returns false when package name is taken', async () => {
 	expect(await npmName('np', options)).toBeFalsy();
 });
 
-test.fails('returns false when package name is taken, regardless of punctuation', async () => {
+test.fails('[known failing test] returns false when package name is taken, regardless of punctuation', async () => {
 	expect(await npmName('ch-alk')).toBeFalsy();
 	expect(await npmName('recursivereaddir')).toBeFalsy();
 });
