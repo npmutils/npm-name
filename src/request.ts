@@ -1,5 +1,5 @@
-import rc from 'rc';
-import registryAuthToken from 'registry-auth-token';
+import getAuthToken from 'registry-auth-token';
+import getRegistryUrl from 'registry-auth-token/registry-url';
 import validate from 'validate-npm-package-name';
 
 namespace npmUtils {
@@ -16,16 +16,7 @@ namespace npmUtils {
 		isOrganization: boolean;
 	}
 
-	const npmjsUrl = 'https://registry.npmjs.org/';
-	const npmjsOrgUrl = 'https://www.npmjs.com/org/';
 	const npmjsRegexPattern = '(@(?<org>[a-z\\d][\\w-.]+))?/?(?<pkg>[a-z\\d][\\w-.]*)?';
-
-	export function getRegistryUrl(scope?: string): string {
-
-		const result = rc('npm', { registry: npmjsUrl });
-		const url = result[`${scope}:registry`] || result.config_registry || result.registry;
-		return url.slice(-1) === '/' ? url : `${url}/`;
-	}
 
 	export function getPackageInfo(name: string, registryUrl?: string): NpmInfo {
 
@@ -42,7 +33,7 @@ namespace npmUtils {
 
 		const isOrganization = organization !== undefined && packageName === undefined;
 
-		registryUrl = normalizeUrl(registryUrl || getRegistryUrl());
+		registryUrl = normalizeUrl(registryUrl || getRegistryUrl(undefined));
 
 		let relativeUrl = packageName;
 		if (organization !== undefined)
@@ -50,7 +41,7 @@ namespace npmUtils {
 		relativeUrl = relativeUrl.toLowerCase();
 
 		if (isOrganization) {
-			registryUrl = normalizeUrl(npmjsOrgUrl);
+			registryUrl = getRegistryUrl(`@${organization}`);
 			relativeUrl = organization.toLowerCase();
 		}
 
@@ -100,7 +91,7 @@ export async function request(name: string, options: NpmNameOptions = {}): Promi
 
 	let headers: HeadersInit = {};
 	if (isOrganization) {
-		const credentials = registryAuthToken(registryUrl, { recursive: true });
+		const credentials = getAuthToken(registryUrl, { recursive: true });
 		if (credentials)
 			headers['Authorization'] = `${credentials.type} ${credentials.token}`;
 	}

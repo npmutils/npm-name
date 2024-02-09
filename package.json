@@ -58,7 +58,6 @@
   },
   "dependencies": {
     "is-url-superb": "^6.1.0",
-    "rc": "^1.2.8",
     "registry-auth-token": "^5.0.2",
     "validate-npm-package-name": "^5.0.0"
   }
